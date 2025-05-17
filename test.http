@@ -1,0 +1,6 @@
+### GET ALL JSON ROOMS
+GET http://localhost:8000/api/rooms
+
+### GET ALL JSON TOOLS
+
+GET http://localhost:8000/api/tools
