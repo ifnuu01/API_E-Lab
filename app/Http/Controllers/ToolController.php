@@ -20,14 +20,14 @@ class ToolController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
         ]);
 
         try {
-            $tool = tool::create($request->all());
+            $tool = tool::create($validated);
             return response()->json([
                 'message' => 'Tool created successfully',
             ], 201);
@@ -55,18 +55,6 @@ class ToolController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        $tool = tool::find($id);
-        if (!$tool) {
-            return response()->json(['message' => 'Tool not found'], 404);
-        }
-        return response()->json($tool);
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
@@ -76,7 +64,7 @@ class ToolController extends Controller
             return response()->json(['message' => 'Tool not found'], 404);
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
@@ -84,7 +72,7 @@ class ToolController extends Controller
         ]);
 
         try {
-            $tool->update($request->all());
+            $tool->update($validated);
             return response()->json([
                 'message' => 'Tool updated successfully',
             ]);

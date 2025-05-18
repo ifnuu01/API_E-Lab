@@ -11,6 +11,7 @@ class tool extends Model
     protected $table = 'tools';
 
     protected $fillable = [
+        'id',
         'name',
         'notes',
         'quantity',
