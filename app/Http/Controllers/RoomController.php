@@ -23,26 +23,22 @@ class RoomController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validated([
+        $validated = $request->validate([
             'code_room' => 'required|string|max:255|unique:rooms',
             'name' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'capacity' => 'required|integer|min:1',
         ]);
-
         try {
-            $room = room::create($request->all());
+            $room = room::create($validated);
             return response()->json([
                 'message' => 'Room created successfully',
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'message' => 'Failed to create room',
-                    'error' => $e->getMessage(),
-                ],
-                500
-            );
+            return response()->json([
+                'message' => 'Failed to create room',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -57,19 +53,6 @@ class RoomController extends Controller
         }
         return response()->json($room);
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($code_room)
-    {
-        $room = room::find($code_room);
-        if (!$room) {
-            return response()->json(['message' => 'Room not found'], 404);
-        }
-        return response()->json($room);
-    }
-
     /**
      * Update the specified resource in storage.
      */
@@ -80,15 +63,15 @@ class RoomController extends Controller
             return response()->json(['message' => 'Room not found'], 404);
         }
 
-        $request->validated([
-            'code_room' => 'required|string|max:255|unique:rooms,code_room,' . $room->id,
+        $validated = $request->validate([
+            'code_room' => 'required|string|max:255|unique:rooms,code_room,' . $room->code_room . ',code_room',
             'name' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'capacity' => 'required|integer|min:1',
         ]);
 
         try {
-            $room->update($request->all());
+            $room->update($validated);
             return response()->json([
                 'message' => 'Room updated successfully',
             ]);
