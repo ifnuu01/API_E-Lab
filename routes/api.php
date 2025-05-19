@@ -22,3 +22,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::apiResource('rooms', RoomController::class);
 Route::apiResource('tools', ToolController::class);
+
+Route::post('rooms/bulk-destroy', [RoomController::class, 'bulkDestroy']);
+Route::post('tools/bulk-destroy', [ToolController::class, 'bulkDestroy']);
