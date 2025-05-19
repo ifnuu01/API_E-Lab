@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class room extends Model
+class Room extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'rooms';
     protected $primaryKey = 'code_room';
@@ -15,9 +16,12 @@ class room extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'code_room',
         'name',
-        'notes',
+        'description',
         'capacity',
+        'status',
+        'image'
     ];
 }

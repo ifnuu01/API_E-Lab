@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\room;
+use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RoomController extends Controller
 {
@@ -12,95 +13,175 @@ class RoomController extends Controller
      */
     public function index()
     {
-        return response()->json(room::all());
+        $rooms = Room::all()->map(function ($room) {
+            $room->image = $room->image ? asset('storage/' . $room->image) : null;
+            return $room;
+        });
+        return response()->json([
+            'status' => true,
+            'message' => 'List of rooms',
+            'data' => $rooms
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'code_room' => 'required|string|max:255|unique:rooms',
+        $request->validate([
+            'code_room' => 'required|string|max:255|unique:rooms,code_room',
             'name' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'capacity' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+            'capacity' => 'required|integer',
+            'image' => 'nullable|image|max:2048'
         ]);
-        try {
-            $room = room::create($validated);
-            return response()->json([
-                'message' => 'Room created successfully',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create room',
-                'error' => $e->getMessage(),
-            ], 500);
+
+        $data = $request->only(['code_room', 'name', 'description', 'capacity', 'status']);
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images/rooms', 'public');
+            $data['image'] = $imagePath;
         }
+
+        $room = Room::create($data);
+
+        $room->image_url = $room->image ? asset('storage/' . $room->image) : null;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room created successfully',
+            'data' => $room
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show($code_room)
+    public function show($id)
     {
-        $room = room::find($code_room);
+        $room = Room::find($id);
+
         if (!$room) {
-            return response()->json(['message' => 'Room not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Room not found',
+                'data' => null
+            ], 404);
         }
-        return response()->json($room);
+
+        $room->image = $room->image ? asset('storage/' . $room->image) : null;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room details',
+            'data' => $room
+        ]);
     }
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $code_room)
+    public function update(Request $request, $id)
     {
-        $room = room::find($code_room);
+        $room = Room::find($id);
+
         if (!$room) {
-            return response()->json(['message' => 'Room not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Room not found',
+                'data' => null
+            ], 404);
         }
 
-        $validated = $request->validate([
-            'code_room' => 'required|string|max:255|unique:rooms,code_room,' . $room->code_room . ',code_room',
+        $request->validate([
             'name' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'capacity' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+            'capacity' => 'required|integer',
+            'image' => 'nullable|image|max:2048',
+            'status' => 'required|in:available,unavailable'
         ]);
 
-        try {
-            $room->update($validated);
-            return response()->json([
-                'message' => 'Room updated successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to update room',
-                'error' => $e->getMessage(),
-            ], 500);
+        $data = $request->only(['name', 'description', 'capacity', 'status']);
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images/rooms', 'public');
+            $data['image'] = $imagePath;
         }
+
+        if ($room->image && Storage::disk('public')->exists($room->image)) {
+            Storage::disk('public')->delete($room->image);
+        }
+
+        $room->update($data);
+        $room->image_url = $room->image ? asset('storage/' . $room->image) : null;
+        return response()->json([
+            'status' => true,
+            'message' => 'Room updated successfully',
+            'data' => $room
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($code_room)
+    public function destroy($id)
     {
-        $room = room::find($code_room);
+        $room = Room::find($id);
+
         if (!$room) {
-            return response()->json(['message' => 'Room not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Room not found',
+                'data' => null
+            ], 404);
         }
 
-        try {
-            $room->delete();
-            return response()->json(['message' => 'Room deleted successfully']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to delete room',
-                'error' => $e->getMessage(),
-            ], 500);
+        if ($room->image && Storage::disk('public')->exists($room->image)) {
+            Storage::disk('public')->delete($room->image);
         }
+
+        $room->code_room = null;
+        $room->save();
+        $room->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room deleted successfully',
+            'data' => null
+        ]);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:rooms,code_room'
+        ]);
+
+        // jika salah satu data id di array ids tidak ada tampilkan pesan error
+        $rooms = Room::whereIn('code_room', $request->ids)->get();
+        if ($rooms->count() !== count($request->ids)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Some rooms not found',
+                'data' => null
+            ], 404);
+        }
+        $count = 0;
+        foreach ($request->ids as $id) {
+            $room = Room::find($id);
+            if ($room->image && Storage::disk('public')->exists($room->image)) {
+                Storage::disk('public')->delete($room->image);
+            }
+            $room->code_room = null;
+            $room->save();
+            $room->delete();
+            $count++;
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => "$count rooms deleted successfully",
+            'data' => null
+        ]);
     }
 }
