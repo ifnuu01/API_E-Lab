@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::create('tools', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('notes')->nullable();
+            $table->string('description')->nullable();
             $table->bigInteger('quantity')->default(0);
+            $table->bigInteger('available_quantity')->default(0);
             $table->enum('status', ['available', 'unavailable'])->default('available');
+            $table->string('image')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -4,17 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class tool extends Model
+class Tool extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     protected $table = 'tools';
 
     protected $fillable = [
         'id',
         'name',
-        'notes',
+        'description',
         'quantity',
+        'available_quantity',
         'status',
+        'image'
     ];
 }

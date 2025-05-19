@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\tool;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ToolController extends Controller
 {
@@ -12,7 +13,15 @@ class ToolController extends Controller
      */
     public function index()
     {
-        return response()->json(tool::all());
+        $tools = Tool::all()->map(function ($tool) {
+            $tool->image = $tool->image ? asset('storage/' . $tool->image) : null;
+            return $tool;
+        });
+        return response()->json([
+            'status' => true,
+            'message' => 'List of tools',
+            'data' => $tools
+        ]);
     }
 
     /**
@@ -20,26 +29,35 @@ class ToolController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'quantity' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+            'quantity' => 'required|integer',
+            'image' => 'nullable|image|max:2048'
         ]);
 
-        try {
-            $tool = tool::create($validated);
-            return response()->json([
-                'message' => 'Tool created successfully',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'message' => 'Failed to create tool',
-                    'error' => $e->getMessage(),
-                ],
-                500
-            );
+        $data = $request->only(['code_tool', 'name', 'description', 'quantity']);
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images/tools', 'public');
+            $data['image'] = $imagePath;
         }
+
+        $tool = Tool::create([
+            'name' => $data['name'],
+            'description' => $data['description'],
+            'quantity' => $data['quantity'],
+            'available_quantity' => $data['quantity'],
+            'image' => $data['image'] ?? null
+        ]);
+
+        $tool->image_url = $tool->image ? asset('storage/' . $tool->image) : null;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tool created successfully',
+            'data' => $tool
+        ], 201);
     }
 
     /**
@@ -47,11 +65,23 @@ class ToolController extends Controller
      */
     public function show($id)
     {
-        $tool = tool::find($id);
+        $tool = Tool::find($id);
+
         if (!$tool) {
-            return response()->json(['message' => 'Tool not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Tool not found',
+                'data' => null
+            ], 404);
         }
-        return response()->json($tool);
+
+        $tool->image_url = $tool->image ? asset('storage/' . $tool->image) : null;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tool details',
+            'data' => $tool
+        ]);
     }
 
     /**
@@ -59,32 +89,41 @@ class ToolController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $tool = tool::find($id);
+        $tool = Tool::find($id);
+
         if (!$tool) {
-            return response()->json(['message' => 'Tool not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Tool not found',
+                'data' => null
+            ], 404);
         }
 
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'quantity' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+            'quantity' => 'required|integer',
+            'available_quantity' => 'required|integer',
             'status' => 'required|in:available,unavailable',
+            'image' => 'nullable|image|max:2048'
         ]);
 
-        try {
-            $tool->update($validated);
-            return response()->json([
-                'message' => 'Tool updated successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'message' => 'Failed to update tool',
-                    'error' => $e->getMessage(),
-                ],
-                500
-            );
+        $data = $request->only(['name', 'description', 'quantity', 'available_quantity', 'status']);
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images/tools', 'public');
+            $data['image'] = $imagePath;
         }
+
+        $tool->update($data);
+
+        $tool->image_url = $tool->image ? asset('storage/' . $tool->image) : null;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tool updated successfully',
+            'data' => $tool
+        ]);
     }
 
     /**
@@ -92,24 +131,49 @@ class ToolController extends Controller
      */
     public function destroy($id)
     {
-        $tool = tool::find($id);
+        $tool = Tool::find($id);
+
         if (!$tool) {
-            return response()->json(['message' => 'Tool not found'], 404);
+            return response()->json([
+                'status' => false,
+                'message' => 'Tool not found',
+                'data' => null
+            ], 404);
         }
 
-        try {
-            $tool->delete();
-            return response()->json([
-                'message' => 'Tool deleted successfully',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'message' => 'Failed to delete tool',
-                    'error' => $e->getMessage(),
-                ],
-                500
-            );
+        if ($tool->image && Storage::disk('public')->exists($tool->image)) {
+            Storage::disk('public')->delete($tool->image);
         }
+
+        $tool->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tool deleted successfully',
+            'data' => null
+        ]);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tools,id'
+        ]);
+
+        $tools = Tool::whereIn('id', $request->ids)->get();
+
+        foreach ($tools as $tool) {
+            if ($tool->image && Storage::disk('public')->exists($tool->image)) {
+                Storage::disk('public')->delete($tool->image);
+            }
+            $tool->delete();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tools deleted successfully',
+            'data' => null
+        ]);
     }
 }
