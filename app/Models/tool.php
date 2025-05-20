@@ -20,4 +20,9 @@ class Tool extends Model
         'status',
         'image'
     ];
+
+    public function toolRequestDetails()
+    {
+        return $this->hasMany(ToolRequestDetail::class);
+    }
 }

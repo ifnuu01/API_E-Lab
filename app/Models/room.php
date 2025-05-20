@@ -21,4 +21,9 @@ class Room extends Model
         'status',
         'image'
     ];
+
+    public function roomRequestDetails()
+    {
+        return $this->hasMany(RoomRequestDetail::class);
+    }
 }
