@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class RoomController extends Controller
 {
@@ -30,7 +31,13 @@ class RoomController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code_room' => 'required|string|max:255|unique:rooms,code_room',
+            'code_room' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('rooms', 'code_room')
+                    ->whereNull('deleted_at')
+            ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'capacity' => 'required|integer',
@@ -94,6 +101,14 @@ class RoomController extends Controller
         }
 
         $request->validate([
+            'code_room' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('rooms', 'code_room')
+                    ->whereNull('deleted_at')
+                    ->ignore($room->id)
+            ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'capacity' => 'required|integer',
@@ -139,8 +154,8 @@ class RoomController extends Controller
             Storage::disk('public')->delete($room->image);
         }
 
-        $room->code_room = null;
-        $room->save();
+        // $room->code_room = null;
+        // $room->save();
         $room->delete();
 
         return response()->json([
@@ -172,8 +187,8 @@ class RoomController extends Controller
             if ($room->image && Storage::disk('public')->exists($room->image)) {
                 Storage::disk('public')->delete($room->image);
             }
-            $room->code_room = null;
-            $room->save();
+            // $room->code_room = null;
+            // $room->save();
             $room->delete();
             $count++;
         }
