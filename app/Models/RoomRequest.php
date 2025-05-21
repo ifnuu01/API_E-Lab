@@ -22,7 +22,7 @@ class RoomRequest extends Model
         'end_time',
         'purpose',
         'status',
-        'code_ticket'
+        'ticket_code',
     ];
 
     public function roomRequestDetails()

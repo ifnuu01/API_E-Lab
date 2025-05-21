@@ -20,10 +20,8 @@ return new class extends Migration
             $table->string('phone');
             $table->string('address');
             $table->date('borrow_date');
-            $table->date('return_date')->nullable();
             $table->date('expiration_date');
             $table->text('purpose');
-            $table->string('image')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->timestamps();
         });

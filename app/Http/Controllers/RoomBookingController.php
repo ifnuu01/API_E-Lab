@@ -10,11 +10,22 @@ use Illuminate\Support\Str;
 
 class RoomBookingController extends Controller
 {
+    public function getAllRoomBooking()
+    {
+        $roomRequests = RoomRequest::with('roomRequestDetails.room')->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'List of room booking requests',
+            'data' => $roomRequests,
+        ], 200);
+    }
+
     public function store(Request $request)
     {
 
         $request->validate([
-            'nim' => 'required|numeric|digits',
+            'nim' => 'required|numeric|digits_between:10,12',
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|numeric|digits_between:10,15',
@@ -61,7 +72,6 @@ class RoomBookingController extends Controller
             $ticketCode = 'TICKET-ROOM-' . strtoupper(Str::random(10));
         } while (RoomRequest::where('ticket_code', $ticketCode)->exists());
 
-
         $roomRequest = RoomRequest::create([
             'nim' => $request->nim,
             'name' => $request->name,
@@ -72,7 +82,7 @@ class RoomBookingController extends Controller
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'purpose' => $request->purpose,
-            'ticket_code' => $ticketCode,
+            'ticket_code' => $ticketCode
         ]);
 
 
@@ -110,6 +120,115 @@ class RoomBookingController extends Controller
             'status' => true,
             'message' => 'Room booking request deleted successfully',
             'data' => null,
+        ]);
+    }
+
+    public function show($id)
+    {
+        $roomRequest = RoomRequest::find($id);
+
+        if (!$roomRequest) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Room booking request not found',
+                'data' => null,
+            ], 404);
+        }
+
+        $roomRequest->load('roomRequestDetails.room');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room booking request retrieved successfully',
+            'data' => $roomRequest,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $roomRequest = RoomRequest::find($id);
+
+        if (!$roomRequest) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Room booking request not found',
+                'data' => null,
+            ], 404);
+        }
+
+        $request->validate([
+            'status' => 'required|in:approved,rejected',
+        ]);
+
+        // cek apakah pada tanggal dan jam yang sama sudah ada bookingan lain
+        if ($request->status == 'approved') {
+            $isConflict = RoomRequest::where('borrow_date', $roomRequest->borrow_date)
+                ->where('status', 'approved')
+                ->where('start_time', '<', $roomRequest->end_time)
+                ->where('end_time', '>', $roomRequest->start_time)
+                ->where('id', '!=', $roomRequest->id)
+                ->exists();
+
+            if ($isConflict) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Room booking conflict detected',
+                    'data' => null,
+                ], 409);
+            }
+        }
+
+        $roomRequest->update([
+            'status' => $request->status,
+        ]);
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room booking request updated successfully',
+            'data' => $roomRequest,
+        ]);
+    }
+
+    public function showByTicketCode($ticketCode)
+    {
+        $roomRequest = RoomRequest::where('ticket_code', $ticketCode)->first();
+
+        if (!$roomRequest) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Room booking request not found',
+                'data' => null,
+            ], 404);
+        }
+
+        $roomRequest->load('roomRequestDetails.room');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room booking request retrieved successfully',
+            'data' => $roomRequest,
+        ]);
+    }
+
+    public function cancelBooking($ticketCode)
+    {
+        $roomRequest = RoomRequest::where('ticket_code', $ticketCode)->first();
+
+        if (!$roomRequest) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Room booking request not found',
+                'data' => null,
+            ], 404);
+        }
+
+        $roomRequest->update(['status' => 'canceled']);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Room booking request canceled successfully',
+            'data' => $roomRequest,
         ]);
     }
 }

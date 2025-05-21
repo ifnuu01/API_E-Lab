@@ -14,6 +14,9 @@ class ToolRequestDetail extends Model
         'tool_request_id',
         'tool_id',
         'quantity',
+        'return_image',
+        'status',
+        'return_date',
     ];
 
     public function toolRequest()

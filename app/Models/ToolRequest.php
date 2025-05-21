@@ -16,12 +16,10 @@ class ToolRequest extends Model
         'phone',
         'address',
         'borrow_date',
-        'return_date',
         'expiration_date',
         'purpose',
         'status',
         'ticket_code',
-        'image'
     ];
     public function toolRequestDetails()
     {
