@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\RoomRequest;
 use App\Models\Room;
 use App\Models\RoomRequestDetail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class RoomBookingController extends Controller
@@ -92,6 +93,8 @@ class RoomBookingController extends Controller
                 'room_id' => $roomId,
             ]);
         }
+
+        Mail::to($roomRequest->email)->send(new \App\Mail\RoomBookingTicketMail($roomRequest));
 
         $roomRequest->load('roomRequestDetails.room');
 
