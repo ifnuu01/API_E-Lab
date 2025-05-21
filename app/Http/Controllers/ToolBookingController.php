@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\ToolRequest;
 use App\Models\ToolRequestDetail;
 use App\Models\Tool;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -96,6 +97,9 @@ class ToolBookingController extends Controller
         }
 
         $toolRequest->load('toolRequestDetails.tool');
+
+        Mail::to($toolRequest->email)->send(new \App\Mail\ToolBookingTicketMail($toolRequest));
+
 
         return response()->json([
             'status' => true,
