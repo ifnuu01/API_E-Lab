@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class ToolBookingController extends Controller
 {
 
-    public function getAllToolBooking()
+    public function index()
     {
         $toolRequests = ToolRequest::with('toolRequestDetails.tool')->get();
 
@@ -99,7 +99,6 @@ class ToolBookingController extends Controller
         $toolRequest->load('toolRequestDetails.tool');
 
         Mail::to($toolRequest->email)->send(new \App\Mail\ToolBookingTicketMail($toolRequest));
-
 
         return response()->json([
             'status' => true,
@@ -259,7 +258,7 @@ class ToolBookingController extends Controller
             ], 404);
         }
 
-        $toolRequest->update(['status' => 'canceled']);
+        $toolRequest->update(['status' => 'cancelled']);
 
         return response()->json([
             'status' => true,

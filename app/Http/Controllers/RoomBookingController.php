@@ -11,7 +11,8 @@ use Illuminate\Support\Str;
 
 class RoomBookingController extends Controller
 {
-    public function getAllRoomBooking()
+    // get all room booking requests
+    public function index()
     {
         $roomRequests = RoomRequest::with('roomRequestDetails.room')->get();
 
@@ -19,9 +20,10 @@ class RoomBookingController extends Controller
             'status' => true,
             'message' => 'List of room booking requests',
             'data' => $roomRequests,
-        ], 200);
+        ]);
     }
 
+    // create room booking request
     public function store(Request $request)
     {
 
@@ -105,6 +107,7 @@ class RoomBookingController extends Controller
         ], 201);
     }
 
+    // delete room booking request
     public function destroy($id)
     {
         $roomRequest = RoomRequest::find($id);
@@ -126,6 +129,7 @@ class RoomBookingController extends Controller
         ]);
     }
 
+    // get room booking request by id
     public function show($id)
     {
         $roomRequest = RoomRequest::find($id);
@@ -147,6 +151,7 @@ class RoomBookingController extends Controller
         ]);
     }
 
+    // update room booking request status
     public function update(Request $request, $id)
     {
         $roomRequest = RoomRequest::find($id);
@@ -193,6 +198,7 @@ class RoomBookingController extends Controller
         ]);
     }
 
+    // get room booking request by ticket code
     public function showByTicketCode($ticketCode)
     {
         $roomRequest = RoomRequest::where('ticket_code', $ticketCode)->first();
@@ -214,6 +220,7 @@ class RoomBookingController extends Controller
         ]);
     }
 
+    // cancel room booking request
     public function cancelBooking($ticketCode)
     {
         $roomRequest = RoomRequest::where('ticket_code', $ticketCode)->first();
