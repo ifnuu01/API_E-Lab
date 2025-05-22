@@ -34,15 +34,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('admin/password', [AdminAuthController::class, 'updatePassword']);
 
     // Endpoint yang hanya boleh diakses setelah login
+    // CRUD rooms dan tools
     Route::apiResource('rooms', RoomController::class);
-    Route::apiResource('tools', ToolController::class);
     Route::post('rooms/bulk-destroy', [RoomController::class, 'bulkDestroy']);
+    Route::apiResource('tools', ToolController::class);
     Route::post('tools/bulk-destroy', [ToolController::class, 'bulkDestroy']);
+
+    // manajemen booking rooms
     Route::get('rooms/booking-rooms', [RoomBookingController::class, 'index']);
     Route::get('rooms/booking-rooms/{id}', [RoomBookingController::class, 'show'])->where('id', '[0-9]+');
     Route::put('rooms/booking-rooms/{id}/status', [RoomBookingController::class, 'update']);
     Route::delete('rooms/booking-rooms/{id}', [RoomBookingController::class, 'destroy']);
-
+    // manajemen booking tools
     Route::get('tools/booking-tools', [ToolBookingController::class, 'index']);
     Route::get('tools/booking-tools/{id}', [ToolBookingController::class, 'showToolRequest'])->where('id', '[0-9]+');
     Route::put('tools/booking-tools/{id}/status', [ToolBookingController::class, 'updateRequest']);
@@ -51,10 +54,11 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ENDPOINT YANG TIDAK PERLU LOGIN (PUBLIC)
+// peminjaman ruangan
 Route::post('rooms/booking-rooms', [RoomBookingController::class, 'store']);
 Route::get('rooms/booking-rooms/ticket/{ticketCode}', [RoomBookingController::class, 'showByTicketCode']);
 Route::put('rooms/booking-rooms/{ticketCode}/cancel', [RoomBookingController::class, 'cancelBooking']);
-
+// peminjaman alat
 Route::post('tools/booking-tools', [ToolBookingController::class, 'createToolRequest']);
 Route::get('tools/booking-tools/ticket/{ticketCode}', [ToolBookingController::class, 'showByTicketCode']);
 Route::put('tools/booking-tools/ticket/{ticketCode}/cancel', [ToolBookingController::class, 'cancelBooking']);
